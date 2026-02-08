@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>一起看烟花吧 ❤</title>
+    <title>献给最爱的人 ❤ 一起看烟花吧</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -415,8 +415,8 @@ body {
     <!-- App -->
     <div class="container">
         <div class="loading-init">
-            <div class="loading-init__header">加载中</div>
-            <div class="loading-init__status">献给我的最爱</div>
+            <div class="loading-init__header">献给最爱的人</div>
+            <div class="loading-init__status">一起看烟花吧 ❤</div>
         </div>
         <div class="stage-container remove">
             <div class="canvas-container">
@@ -504,7 +504,7 @@ body {
     </div>
 
     <script>
-        var global_name = "一起看烟花吧";
+        var global_name = "献给最爱的人";
     </script>
 
     <!-- Inline Audio Data -->
@@ -3144,15 +3144,33 @@ const soundManager = {
                 const b64 = dataURI.split(',')[1];
                 const binaryStr = atob(b64);
                 const len = binaryStr.length;
-                const bytes = new Uint8Array(len);
+                const buffer = new ArrayBuffer(len);
+                const view = new Uint8Array(buffer);
                 for (let i = 0; i < len; i++) {
-                    bytes[i] = binaryStr.charCodeAt(i);
+                    view[i] = binaryStr.charCodeAt(i);
                 }
-                const promise = new Promise(resolve => {
-                    this.ctx.decodeAudioData(bytes.buffer, resolve, () => {
-                        console.warn('Failed to decode:', fileName);
+                // Use promise-based API with callback fallback
+                const promise = new Promise((resolve) => {
+                    try {
+                        const result = this.ctx.decodeAudioData(
+                            buffer,
+                            (decoded) => resolve(decoded),
+                            (err) => {
+                                console.warn('Failed to decode:', fileName, err);
+                                resolve(null);
+                            }
+                        );
+                        // Modern browsers return a Promise
+                        if (result && typeof result.then === 'function') {
+                            result.then(resolve).catch(() => {
+                                console.warn('Promise decode failed:', fileName);
+                                resolve(null);
+                            });
+                        }
+                    } catch(e) {
+                        console.warn('decodeAudioData error:', fileName, e);
                         resolve(null);
-                    });
+                    }
                 });
                 filePromises.push(promise);
                 allFilePromises.push(promise);
