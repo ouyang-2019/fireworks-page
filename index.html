@@ -3161,14 +3161,16 @@ const soundManager = {
         // Play a sound with no volume for iOS. This 'unlocks' the audio context when the user first enables sound.
         this.playSound('lift', 0);
         // Chrome mobile requires interaction before starting audio context.
-        // The sound toggle button is triggered on 'touchstart', which doesn't seem to count as a full
-        // interaction to Chrome. I guess it needs a click? At any rate if the first thing the user does
-        // is enable audio, it doesn't work. Using a setTimeout allows the first interaction to be registered.
-        // Perhaps a better solution is to track whether the user has interacted, and if not but they try enabling
-        // sound, show a tooltip that they should tap again to enable sound.
         setTimeout(() => {
             this.ctx.resume();
         }, 250);
+    },
+
+    // Ensure AudioContext is resumed on user interaction (required by modern browsers)
+    ensureResumed() {
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
     },
 
     // Private property used to throttle small burst sounds.
@@ -3194,6 +3196,9 @@ const soundManager = {
         if (!canPlaySoundSelector() || simSpeed < 0.95) {
             return;
         }
+
+        // Ensure AudioContext is active before playing
+        this.ensureResumed();
 
         // Throttle small bursts, since floral/falling leaves shells have a lot of them.
         if (type === 'burstSmall') {
@@ -3262,6 +3267,18 @@ if (IS_HEADER) {
                 }
             );
     }, 0);
+
+    // Modern browsers require user interaction to unlock AudioContext.
+    // Listen for first interaction and resume the audio context.
+    const unlockAudio = () => {
+        soundManager.ensureResumed();
+        document.removeEventListener('click', unlockAudio);
+        document.removeEventListener('touchstart', unlockAudio);
+        document.removeEventListener('keydown', unlockAudio);
+    };
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('touchstart', unlockAudio);
+    document.addEventListener('keydown', unlockAudio);
 }
     </script>
 </body>
